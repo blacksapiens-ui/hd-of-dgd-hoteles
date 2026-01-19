@@ -1,5 +1,5 @@
 import { supabase } from '../supabaseClient';
-import { NewsItem } from '../../types';
+import { NewsItem } from '../types';
 
 export const newsService = {
     async fetchNews() {
