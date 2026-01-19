@@ -2,21 +2,24 @@ import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Hotel, HeroSlide, NewsItem, HotelAmenities, ExtendedAmenities, RoomType, Restaurant } from '../types';
 import { useHotelContext } from '../context/HotelContext';
+import { useAuth } from '../context/AuthContext';
 
 const CMSPage: React.FC = () => {
     const navigate = useNavigate();
     const { hotels, deleteHotel, updateHotel, importHotels, news, addNews, updateNews, deleteNews, slides, addSlide, updateSlide, deleteSlide } = useHotelContext();
+    const { role: authRole } = useAuth();
+
     const fileInputRef = useRef<HTMLInputElement>(null);
-    
+
     // UI State
-    const [activeSection, setActiveSection] = useState<'hotels' | 'web' | 'news'>('hotels');
+    const [activeSection, setActiveSection] = useState<'hotels' | 'web' | 'news' | 'users'>('hotels');
     const [searchTerm, setSearchTerm] = useState('');
     const [sheetUrl, setSheetUrl] = useState('');
-    
+
     // Import Feedback State
     const [importStatus, setImportStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [importMessage, setImportMessage] = useState('');
-    
+
     // News State
     const [isEditingNews, setIsEditingNews] = useState(false);
     const [currentNewsItem, setCurrentNewsItem] = useState<NewsItem | null>(null);
@@ -34,7 +37,7 @@ const CMSPage: React.FC = () => {
     ];
 
     // Filter Logic
-    const filteredHotels = hotels.filter(hotel => 
+    const filteredHotels = hotels.filter(hotel =>
         hotel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         hotel.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
         hotel.id.toLowerCase().includes(searchTerm.toLowerCase())
@@ -44,8 +47,8 @@ const CMSPage: React.FC = () => {
     const downloadCSVTemplate = () => {
         const headers = [
             'ID', 'Nombre', 'Ubicacion', 'Rating', 'Reviews', 'Categoria', 'Destacado', 'Estado',
-            'Descripcion', 'Latitud', 'Longitud', 'Highlights', 
-            'ImagenPrincipal', 'Galeria', 
+            'Descripcion', 'Latitud', 'Longitud', 'Highlights',
+            'ImagenPrincipal', 'Galeria',
             'PlanAlimenticio', 'PoliticaNinos', 'Bares',
             'CheckIn', 'CheckOut', 'Desayuno', 'Almuerzo', 'Cena',
             'Wifi', 'Piscina', 'Spa', 'Gimnasio', 'AireAcondicionado', 'RoomService', 'Playa', 'ClubNinos',
@@ -64,8 +67,8 @@ const CMSPage: React.FC = () => {
             'Estandar:2:50|Suite:4:10', 'Restaurante A:Italiana:SI|Buffet B:Internacional:NO'
         ];
 
-        const csvContent = "data:text/csv;charset=utf-8," 
-            + headers.join(",") + "\n" 
+        const csvContent = "data:text/csv;charset=utf-8,"
+            + headers.join(",") + "\n"
             + sampleRow.join(",");
 
         const encodedUri = encodeURI(csvContent);
@@ -80,7 +83,7 @@ const CMSPage: React.FC = () => {
     const parseCSV = (text: string): Hotel[] => {
         const lines = text.split('\n');
         const hotels: Hotel[] = [];
-        
+
         // Helper to parse boolean
         const parseBool = (val: string) => {
             if (!val) return false;
@@ -120,20 +123,20 @@ const CMSPage: React.FC = () => {
                 };
             });
         };
-        
+
         // Start from index 1 to skip headers
         for (let i = 1; i < lines.length; i++) {
             const line = lines[i].trim();
             if (!line) continue;
-            
+
             // Handle standard CSV splitting (respecting quotes would be better, but simple split for now)
             // Using a regex to split by comma but ignore commas inside quotes is better, but simple split matches typical Sheets export
             const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            
+
             // Clean quotes if present
             const clean = (s: string) => s ? s.replace(/^"|"$/g, '').trim() : '';
 
-            if (cols.length < 5) continue; 
+            if (cols.length < 5) continue;
 
             // Mapping based on the Headers defined in downloadCSVTemplate
             const amenities: HotelAmenities = {
@@ -171,19 +174,19 @@ const CMSPage: React.FC = () => {
                 category: (clean(cols[5]) as any) || 'Confort',
                 featured: parseBool(cols[6]),
                 status: (clean(cols[7]) as any) || 'Activo',
-                
+
                 description: clean(cols[8]),
                 latitude: clean(cols[9]),
                 longitude: clean(cols[10]),
                 highlights: parseList(clean(cols[11])),
-                
+
                 mainImage: clean(cols[12]),
                 gallery: parseList(clean(cols[13])),
-                
+
                 mealPlan: clean(cols[14]),
                 childPolicy: clean(cols[15]),
                 bars: parseInt(clean(cols[16])) || 0,
-                
+
                 schedules: {
                     checkIn: clean(cols[17]) || '15:00',
                     checkOut: clean(cols[18]) || '12:00',
@@ -191,7 +194,7 @@ const CMSPage: React.FC = () => {
                     lunchTime: clean(cols[20]),
                     dinnerTime: clean(cols[21])
                 },
-                
+
                 amenities: amenities,
                 extendedAmenities: extendedAmenities,
                 roomTypes: parseRooms(clean(cols[42])),
@@ -217,8 +220,8 @@ const CMSPage: React.FC = () => {
                     setImportMessage(`¡Proceso exitoso! Se han importado ${parsedHotels.length} hoteles correctamente.`);
                     // Auto-hide success message after 5 seconds
                     setTimeout(() => {
-                         setImportStatus('idle');
-                         setImportMessage('');
+                        setImportStatus('idle');
+                        setImportMessage('');
                     }, 5000);
                 } else {
                     setImportStatus('error');
@@ -237,15 +240,15 @@ const CMSPage: React.FC = () => {
         if (event.target.files && event.target.files[0]) {
             setImportStatus('loading');
             setImportMessage('Leyendo archivo...');
-            
+
             const file = event.target.files[0];
             fileReader.readAsText(file, "UTF-8");
-            
+
             fileReader.onload = (e) => {
                 const content = e.target?.result as string;
                 if (content) processCSVData(content);
             };
-            
+
             fileReader.onerror = () => {
                 setImportStatus('error');
                 setImportMessage("Error de lectura del archivo.");
@@ -257,32 +260,38 @@ const CMSPage: React.FC = () => {
 
     const handleImportFromUrl = async () => {
         if (!sheetUrl) return;
-        
+
         setImportStatus('loading');
         setImportMessage('Conectando con Google Sheets...');
-        
+
         let fetchUrl = sheetUrl;
-        
+
         // Attempt to convert a standard Google Sheet edit link to a CSV export link
         if (sheetUrl.includes('docs.google.com/spreadsheets')) {
-            if (sheetUrl.includes('/edit')) {
-                fetchUrl = sheetUrl.replace(/\/edit.*$/, '/export?format=csv');
-            } else if (!sheetUrl.includes('output=csv')) {
-                 // Try appending if it looks like a base url
-                 fetchUrl = `${sheetUrl}/export?format=csv`;
+            // Extract ID
+            const match = sheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+            if (match && match[1]) {
+                fetchUrl = `https://docs.google.com/spreadsheets/d/${match[1]}/export?format=csv`;
             }
         }
 
         try {
+            console.log("Fetching CSV from:", fetchUrl);
             const response = await fetch(fetchUrl);
-            if (!response.ok) throw new Error("No se pudo descargar la hoja de cálculo.");
+            if (!response.ok) throw new Error(`Error ${response.status}: No se pudo descargar la hoja. Verifique permisos.`);
             const text = await response.text();
+
+            // Basic validation
+            if (!text || !text.includes(',')) {
+                throw new Error("El archivo descargado no parece un CSV válido.");
+            }
+
             processCSVData(text);
             setSheetUrl('');
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
             setImportStatus('error');
-            setImportMessage("Error de conexión. Asegúrate de que el enlace sea público ('Publicar en la web').");
+            setImportMessage(error.message || "Error de conexión. Asegúrate de que el enlace sea público ('Cualquiera con el enlace').");
         }
     };
 
@@ -292,12 +301,12 @@ const CMSPage: React.FC = () => {
 
     const handleToggleFeatured = (id: string) => {
         const hotel = hotels.find(h => h.id === id);
-        if(hotel) updateHotel(id, { ...hotel, featured: !hotel.featured });
+        if (hotel) updateHotel(id, { ...hotel, featured: !hotel.featured });
     };
 
     const handleToggleStatus = (id: string) => {
         const hotel = hotels.find(h => h.id === id);
-        if(hotel) updateHotel(id, { ...hotel, status: hotel.status === 'Activo' ? 'Inactivo' : 'Activo' });
+        if (hotel) updateHotel(id, { ...hotel, status: hotel.status === 'Activo' ? 'Inactivo' : 'Activo' });
     };
 
     // --- Slide Handlers ---
@@ -305,15 +314,15 @@ const CMSPage: React.FC = () => {
         if (slide) {
             setEditingSlide(slide);
         } else {
-            setEditingSlide({ 
-                id: Date.now().toString(), 
-                title: '', 
-                subtitle: '', 
-                promoTag: 'Novedad', 
+            setEditingSlide({
+                id: Date.now().toString(),
+                title: '',
+                subtitle: '',
+                promoTag: 'Novedad',
                 tagColor: 'blue',
-                imageUrl: '', 
-                ctaText: 'Ver Detalles', 
-                ctaLink: '' 
+                imageUrl: '',
+                ctaText: 'Ver Detalles',
+                ctaLink: ''
             });
         }
         setIsSlideModalOpen(true);
@@ -336,46 +345,46 @@ const CMSPage: React.FC = () => {
     };
 
     // --- News Handlers ---
-    const handleCreateNews = () => { 
-        setIsEditingNews(true); 
+    const handleCreateNews = () => {
+        setIsEditingNews(true);
         setCurrentNewsItem({
-            id: Date.now().toString(), 
-            category: 'General', 
+            id: Date.now().toString(),
+            category: 'General',
             tagColor: 'blue',
-            title: '', 
-            content: '', 
-            relatedHotelId: '', 
-            destination: '', 
-            publishDate: new Date().toISOString().split('T')[0], 
-            expirationDate: '', 
+            title: '',
+            content: '',
+            relatedHotelId: '',
+            destination: '',
+            publishDate: new Date().toISOString().split('T')[0],
+            expirationDate: '',
             isActive: true
-        }); 
+        });
     };
-    
+
     const handleEditNews = (item: NewsItem) => {
         setCurrentNewsItem(item);
         setIsEditingNews(true);
     };
 
-    const handleSaveNews = () => { 
-        if(currentNewsItem) { 
+    const handleSaveNews = () => {
+        if (currentNewsItem) {
             const exists = news.find(n => n.id === currentNewsItem.id);
-            if(exists) updateNews(currentNewsItem);
+            if (exists) updateNews(currentNewsItem);
             else addNews(currentNewsItem);
-            setIsEditingNews(false); 
+            setIsEditingNews(false);
             setCurrentNewsItem(null);
         }
     };
 
     const handleDeleteNewsItem = (id: string) => {
-        if(window.confirm("¿Eliminar noticia?")) deleteNews(id);
+        if (window.confirm("¿Eliminar noticia?")) deleteNews(id);
     };
-    
+
     return (
         <div className="flex h-screen w-full overflow-hidden bg-background-light dark:bg-background-dark">
             <aside className="w-64 flex-shrink-0 flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 h-full">
                 <div className="p-6 flex items-center gap-3">
-                    <div className="bg-center bg-no-repeat bg-cover rounded-full size-10 shrink-0 shadow-sm relative" style={{backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuBfmNN85vOvZF0JuhNoYMDHOjan0wAZEkjuhEqdUf4_bNVshKHbyKvjLzkRabRSpFxXtXencmRNcl7OMS9WhQf9-7WXNJMdX2o_uFZfmiYF-HRQE52L-qx_ibtots1GIMennKIOwrPFngeC8_oQgkT03ccqtl7vcPTSdFHHB5K6405tl0_MIVOqYOwTMHQp-1IxRFS66bYAcBn4lIuNQvrwFm-TkMvbyA7MSSQ7xVhgkov2k52ZexyDC6G76uurFCHOnNqMxcFMd1KU")'}}></div>
+                    <div className="bg-center bg-no-repeat bg-cover rounded-full size-10 shrink-0 shadow-sm relative" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuBfmNN85vOvZF0JuhNoYMDHOjan0wAZEkjuhEqdUf4_bNVshKHbyKvjLzkRabRSpFxXtXencmRNcl7OMS9WhQf9-7WXNJMdX2o_uFZfmiYF-HRQE52L-qx_ibtots1GIMennKIOwrPFngeC8_oQgkT03ccqtl7vcPTSdFHHB5K6405tl0_MIVOqYOwTMHQp-1IxRFS66bYAcBn4lIuNQvrwFm-TkMvbyA7MSSQ7xVhgkov2k52ZexyDC6G76uurFCHOnNqMxcFMd1KU")' }}></div>
                     <h1 className="text-slate-900 dark:text-white text-lg font-bold">DGD Admin</h1>
                 </div>
                 <nav className="flex-1 overflow-y-auto px-4 py-2 flex flex-col gap-2">
@@ -391,6 +400,12 @@ const CMSPage: React.FC = () => {
                         <span className="material-symbols-outlined">newspaper</span>
                         <span className="text-sm font-medium">Noticias</span>
                     </button>
+                    {authRole === 'admin' && (
+                        <button onClick={() => navigate('/admin/users')} className={`flex items-center gap-3 px-3 py-3 rounded-lg w-full text-left transition-colors ${activeSection === 'users' ? 'bg-primary/10 text-primary' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+                            <span className="material-symbols-outlined">group</span>
+                            <span className="text-sm font-medium">Usuarios</span>
+                        </button>
+                    )}
                     <Link to="/" className="flex items-center gap-3 px-3 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors mt-auto">
                         <span className="material-symbols-outlined">arrow_back</span>
                         <span className="text-sm font-medium">Volver</span>
@@ -409,27 +424,27 @@ const CMSPage: React.FC = () => {
                 </header>
 
                 <div className="flex-1 px-8 py-4 flex flex-col gap-8 max-w-[1200px] mx-auto w-full pb-20">
-                    
+
                     {/* --- HOTELS VIEW --- */}
                     {activeSection === 'hotels' && (
                         <section className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-2">
-                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                 <div>
                                     <h2 className="text-slate-900 dark:text-white text-3xl font-black tracking-tight">Inventario de Hoteles</h2>
                                     <p className="text-slate-500 dark:text-slate-400 mt-1">Administra la disponibilidad y carga masivamente desde Excel o Google Sheets.</p>
                                 </div>
                                 <div className="flex flex-wrap gap-3 items-center">
-                                     <button onClick={() => navigate('/cms/add-hotel')} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-lg shadow-lg shadow-primary/20 transition-all active:scale-95">
+                                    <button onClick={() => navigate('/cms/add-hotel')} className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-lg shadow-lg shadow-primary/20 transition-all active:scale-95">
                                         <span className="material-symbols-outlined text-[20px]">add</span>
                                         <span className="text-sm font-bold hidden md:inline">Nuevo Hotel</span>
                                     </button>
                                 </div>
                             </div>
-                            
+
                             {/* Import Tools Panel */}
                             <div className="bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
                                 <h3 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-wide mb-4 flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-green-600">table_view</span> 
+                                    <span className="material-symbols-outlined text-green-600">table_view</span>
                                     Carga Masiva (Google Sheets)
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -438,8 +453,8 @@ const CMSPage: React.FC = () => {
                                         <label className="text-xs text-gray-500 font-medium">Opción 1: Subir archivo CSV descargado</label>
                                         <div className="flex gap-2">
                                             <input type="file" accept=".csv" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
-                                            <button 
-                                                onClick={() => fileInputRef.current?.click()} 
+                                            <button
+                                                onClick={() => fileInputRef.current?.click()}
                                                 disabled={importStatus === 'loading'}
                                                 className="flex-1 flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2.5 rounded-lg transition-all border border-slate-200 dark:border-slate-700 disabled:opacity-50 disabled:cursor-wait"
                                             >
@@ -456,15 +471,15 @@ const CMSPage: React.FC = () => {
                                     <div className="flex flex-col gap-3">
                                         <label className="text-xs text-gray-500 font-medium">Opción 2: Importar desde Enlace (Google Sheets)</label>
                                         <div className="flex gap-2">
-                                            <input 
-                                                type="text" 
+                                            <input
+                                                type="text"
                                                 value={sheetUrl}
                                                 onChange={(e) => setSheetUrl(e.target.value)}
-                                                placeholder="Pega el enlace de Google Sheets aquí..." 
+                                                placeholder="Pega el enlace de Google Sheets aquí..."
                                                 className="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-primary outline-none"
                                             />
-                                            <button 
-                                                onClick={handleImportFromUrl} 
+                                            <button
+                                                onClick={handleImportFromUrl}
                                                 disabled={importStatus === 'loading' || !sheetUrl}
                                                 className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-colors whitespace-nowrap"
                                             >
@@ -478,11 +493,10 @@ const CMSPage: React.FC = () => {
 
                                 {/* Import Status Feedback Banner */}
                                 {importStatus !== 'idle' && (
-                                    <div className={`mt-4 p-3 rounded-lg flex items-center gap-3 text-sm animate-in fade-in slide-in-from-top-1 ${
-                                        importStatus === 'loading' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
+                                    <div className={`mt-4 p-3 rounded-lg flex items-center gap-3 text-sm animate-in fade-in slide-in-from-top-1 ${importStatus === 'loading' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
                                         importStatus === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
-                                        'bg-red-50 text-red-700 border border-red-100'
-                                    }`}>
+                                            'bg-red-50 text-red-700 border border-red-100'
+                                        }`}>
                                         {importStatus === 'loading' && <span className="animate-spin material-symbols-outlined text-xl">progress_activity</span>}
                                         {importStatus === 'success' && <span className="material-symbols-outlined text-xl">check_circle</span>}
                                         {importStatus === 'error' && <span className="material-symbols-outlined text-xl">error</span>}
@@ -494,15 +508,15 @@ const CMSPage: React.FC = () => {
                             {/* Search Bar */}
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400">search</span>
-                                <input 
-                                    type="text" 
-                                    placeholder="Buscar por nombre de hotel, ID o ubicación..." 
+                                <input
+                                    type="text"
+                                    placeholder="Buscar por nombre de hotel, ID o ubicación..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none shadow-sm transition-all"
                                 />
                             </div>
-                            
+
                             <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left border-collapse">
@@ -518,10 +532,10 @@ const CMSPage: React.FC = () => {
                                         <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                                             {filteredHotels.length > 0 ? filteredHotels.map(hotel => (
                                                 <tr key={hotel.id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                                    <td className="px-6 py-4 text-sm text-slate-500 font-mono">#{hotel.id.substring(0,6)}</td>
+                                                    <td className="px-6 py-4 text-sm text-slate-500 font-mono">#{hotel.id.substring(0, 6)}</td>
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="size-10 rounded-lg bg-slate-200 bg-cover bg-center shrink-0" style={{backgroundImage: `url("${hotel.mainImage}")`}}></div>
+                                                            <div className="size-10 rounded-lg bg-slate-200 bg-cover bg-center shrink-0" style={{ backgroundImage: `url("${hotel.mainImage}")` }}></div>
                                                             <div>
                                                                 <p className="text-sm font-semibold text-slate-900 dark:text-white">{hotel.name}</p>
                                                                 <p className="text-xs text-slate-500">{hotel.location}</p>
@@ -562,15 +576,15 @@ const CMSPage: React.FC = () => {
                     {/* --- WEB CONTENT VIEW (SLIDER EDITOR) --- */}
                     {activeSection === 'web' && (
                         <section className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-2">
-                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                 <div><h2 className="text-slate-900 dark:text-white text-3xl font-black">Editor de Carrusel</h2></div>
                                 <button onClick={() => openSlideModal()} className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg"><span className="material-symbols-outlined">add</span> Nuevo Slide</button>
-                             </div>
-                             
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {slides.map(s => (
                                     <div key={s.id} className="relative group border rounded-xl overflow-hidden shadow-sm h-64">
-                                        <div className="absolute inset-0 bg-cover bg-center" style={{backgroundImage: `url(${s.imageUrl})`}}></div>
+                                        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${s.imageUrl})` }}></div>
                                         <div className="absolute inset-0 bg-black/50 p-6 flex flex-col justify-end text-white">
                                             <span className={`text-xs font-bold px-2 py-1 rounded w-fit mb-2 ${colors.find(c => c.value === s.tagColor)?.class || 'bg-blue-100 text-blue-700'}`}>{s.promoTag}</span>
                                             <h3 className="font-bold text-xl">{s.title}</h3>
@@ -582,48 +596,48 @@ const CMSPage: React.FC = () => {
                                         </div>
                                     </div>
                                 ))}
-                             </div>
+                            </div>
 
-                             {/* Slide Modal */}
-                             {isSlideModalOpen && editingSlide && (
+                            {/* Slide Modal */}
+                            {isSlideModalOpen && editingSlide && (
                                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
                                     <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-lg p-6 flex flex-col gap-4 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto custom-scrollbar">
                                         <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Editar Slide del Carrusel</h3>
-                                        
+
                                         <div className="flex flex-col gap-2">
                                             <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Título Principal</label>
-                                            <input 
-                                                value={editingSlide.title} 
-                                                onChange={e => setEditingSlide({...editingSlide, title: e.target.value})} 
-                                                className="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 rounded-lg text-slate-900 dark:text-white" 
-                                                placeholder="Ej: Descubre el Encanto de Cartagena" 
+                                            <input
+                                                value={editingSlide.title}
+                                                onChange={e => setEditingSlide({ ...editingSlide, title: e.target.value })}
+                                                className="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 rounded-lg text-slate-900 dark:text-white"
+                                                placeholder="Ej: Descubre el Encanto de Cartagena"
                                             />
                                             <p className="text-xs text-slate-500">Texto grande que aparece como encabezado del banner.</p>
                                         </div>
 
                                         <div className="flex flex-col gap-2">
                                             <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Subtítulo</label>
-                                            <input 
-                                                value={editingSlide.subtitle} 
-                                                onChange={e => setEditingSlide({...editingSlide, subtitle: e.target.value})} 
-                                                className="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 rounded-lg text-slate-900 dark:text-white" 
-                                                placeholder="Ej: Tarifas exclusivas para grupos..." 
+                                            <input
+                                                value={editingSlide.subtitle}
+                                                onChange={e => setEditingSlide({ ...editingSlide, subtitle: e.target.value })}
+                                                className="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 rounded-lg text-slate-900 dark:text-white"
+                                                placeholder="Ej: Tarifas exclusivas para grupos..."
                                             />
-                                             <p className="text-xs text-slate-500">Descripción breve debajo del título.</p>
+                                            <p className="text-xs text-slate-500">Descripción breve debajo del título.</p>
                                         </div>
 
                                         <div className="flex flex-col gap-2">
                                             <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Etiqueta Promocional</label>
                                             <div className="flex gap-2">
-                                                <input 
-                                                    value={editingSlide.promoTag} 
-                                                    onChange={e => setEditingSlide({...editingSlide, promoTag: e.target.value})} 
-                                                    className="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 rounded-lg flex-1 text-slate-900 dark:text-white" 
-                                                    placeholder="Ej: Hotel Destacado" 
+                                                <input
+                                                    value={editingSlide.promoTag}
+                                                    onChange={e => setEditingSlide({ ...editingSlide, promoTag: e.target.value })}
+                                                    className="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 rounded-lg flex-1 text-slate-900 dark:text-white"
+                                                    placeholder="Ej: Hotel Destacado"
                                                 />
-                                                <select 
-                                                    value={editingSlide.tagColor} 
-                                                    onChange={e => setEditingSlide({...editingSlide, tagColor: e.target.value})} 
+                                                <select
+                                                    value={editingSlide.tagColor}
+                                                    onChange={e => setEditingSlide({ ...editingSlide, tagColor: e.target.value })}
                                                     className="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 rounded-lg w-32 text-slate-900 dark:text-white"
                                                 >
                                                     {colors.map(c => <option key={c.value} value={c.value}>{c.name}</option>)}
@@ -634,11 +648,11 @@ const CMSPage: React.FC = () => {
 
                                         <div className="flex flex-col gap-2">
                                             <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Imagen de Fondo</label>
-                                            <input 
-                                                value={editingSlide.imageUrl} 
-                                                onChange={e => setEditingSlide({...editingSlide, imageUrl: e.target.value})} 
-                                                className="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 rounded-lg text-slate-900 dark:text-white" 
-                                                placeholder="https://..." 
+                                            <input
+                                                value={editingSlide.imageUrl}
+                                                onChange={e => setEditingSlide({ ...editingSlide, imageUrl: e.target.value })}
+                                                className="border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 rounded-lg text-slate-900 dark:text-white"
+                                                placeholder="https://..."
                                             />
                                             <p className="text-xs text-slate-500">URL de la imagen de alta calidad para el fondo del slide.</p>
                                         </div>
@@ -647,19 +661,19 @@ const CMSPage: React.FC = () => {
                                             <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Botón de Acción (CTA)</label>
                                             <div className="flex gap-2">
                                                 <div className="flex-1">
-                                                     <input 
-                                                        value={editingSlide.ctaText} 
-                                                        onChange={e => setEditingSlide({...editingSlide, ctaText: e.target.value})} 
-                                                        className="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 rounded-lg text-slate-900 dark:text-white" 
-                                                        placeholder="Texto (Ej: Ver Oferta)" 
+                                                    <input
+                                                        value={editingSlide.ctaText}
+                                                        onChange={e => setEditingSlide({ ...editingSlide, ctaText: e.target.value })}
+                                                        className="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 rounded-lg text-slate-900 dark:text-white"
+                                                        placeholder="Texto (Ej: Ver Oferta)"
                                                     />
                                                 </div>
                                                 <div className="flex-1">
-                                                     <input 
-                                                        value={editingSlide.ctaLink} 
-                                                        onChange={e => setEditingSlide({...editingSlide, ctaLink: e.target.value})} 
-                                                        className="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 rounded-lg text-slate-900 dark:text-white" 
-                                                        placeholder="Ruta (Ej: /hotel/123)" 
+                                                    <input
+                                                        value={editingSlide.ctaLink}
+                                                        onChange={e => setEditingSlide({ ...editingSlide, ctaLink: e.target.value })}
+                                                        className="w-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 rounded-lg text-slate-900 dark:text-white"
+                                                        placeholder="Ruta (Ej: /hotel/123)"
                                                     />
                                                 </div>
                                             </div>
@@ -672,14 +686,14 @@ const CMSPage: React.FC = () => {
                                         </div>
                                     </div>
                                 </div>
-                             )}
+                            )}
                         </section>
-                     )}
-                     
-                     {/* --- NEWS VIEW --- */}
+                    )}
+
+                    {/* --- NEWS VIEW --- */}
                     {activeSection === 'news' && !isEditingNews && (
                         <section className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-2">
-                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                 <div>
                                     <h2 className="text-slate-900 dark:text-white text-3xl font-black tracking-tight">Noticias y Actualizaciones</h2>
                                 </div>
@@ -711,30 +725,30 @@ const CMSPage: React.FC = () => {
                     {activeSection === 'news' && isEditingNews && currentNewsItem && (
                         <div className="bg-white dark:bg-slate-900 p-8 rounded-xl border shadow-sm max-w-3xl mx-auto flex flex-col gap-6">
                             <h2 className="text-2xl font-bold border-b pb-4">Editar Noticia</h2>
-                            
+
                             <div className="flex flex-col gap-2">
                                 <label className="text-sm font-bold text-gray-600">Título</label>
-                                <input value={currentNewsItem.title} onChange={e => setCurrentNewsItem({...currentNewsItem, title: e.target.value})} className="w-full border p-3 rounded-lg" placeholder="Ej: Cierre de Piscina"/>
+                                <input value={currentNewsItem.title} onChange={e => setCurrentNewsItem({ ...currentNewsItem, title: e.target.value })} className="w-full border p-3 rounded-lg" placeholder="Ej: Cierre de Piscina" />
                             </div>
 
                             <div className="flex flex-col gap-2">
                                 <label className="text-sm font-bold text-gray-600">Contenido</label>
-                                <textarea rows={4} value={currentNewsItem.content} onChange={e => setCurrentNewsItem({...currentNewsItem, content: e.target.value})} className="w-full border p-3 rounded-lg" placeholder="Detalles de la noticia..."/>
+                                <textarea rows={4} value={currentNewsItem.content} onChange={e => setCurrentNewsItem({ ...currentNewsItem, content: e.target.value })} className="w-full border p-3 rounded-lg" placeholder="Detalles de la noticia..." />
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="flex flex-col gap-2">
                                     <label className="text-sm font-bold text-gray-600">Etiqueta</label>
                                     <div className="flex gap-2">
-                                        <input value={currentNewsItem.category} onChange={e => setCurrentNewsItem({...currentNewsItem, category: e.target.value})} className="border p-3 rounded-lg flex-1" placeholder="Ej: Mantenimiento"/>
-                                        <select value={currentNewsItem.tagColor} onChange={e => setCurrentNewsItem({...currentNewsItem, tagColor: e.target.value})} className="border p-3 rounded-lg w-32">
+                                        <input value={currentNewsItem.category} onChange={e => setCurrentNewsItem({ ...currentNewsItem, category: e.target.value })} className="border p-3 rounded-lg flex-1" placeholder="Ej: Mantenimiento" />
+                                        <select value={currentNewsItem.tagColor} onChange={e => setCurrentNewsItem({ ...currentNewsItem, tagColor: e.target.value })} className="border p-3 rounded-lg w-32">
                                             {colors.map(c => <option key={c.value} value={c.value}>{c.name}</option>)}
                                         </select>
                                     </div>
                                 </div>
                                 <div className="flex flex-col gap-2">
                                     <label className="text-sm font-bold text-gray-600">Vincular a Hotel (Opcional)</label>
-                                    <select value={currentNewsItem.relatedHotelId} onChange={e => setCurrentNewsItem({...currentNewsItem, relatedHotelId: e.target.value, destination: hotels.find(h=>h.id===e.target.value)?.location || ''})} className="border p-3 rounded-lg">
+                                    <select value={currentNewsItem.relatedHotelId} onChange={e => setCurrentNewsItem({ ...currentNewsItem, relatedHotelId: e.target.value, destination: hotels.find(h => h.id === e.target.value)?.location || '' })} className="border p-3 rounded-lg">
                                         <option value="">-- General / Ninguno --</option>
                                         {hotels.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
                                     </select>
@@ -744,11 +758,11 @@ const CMSPage: React.FC = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="flex flex-col gap-2">
                                     <label className="text-sm font-bold text-gray-600">Fecha Publicación</label>
-                                    <input type="date" value={currentNewsItem.publishDate} onChange={e => setCurrentNewsItem({...currentNewsItem, publishDate: e.target.value})} className="border p-3 rounded-lg" />
+                                    <input type="date" value={currentNewsItem.publishDate} onChange={e => setCurrentNewsItem({ ...currentNewsItem, publishDate: e.target.value })} className="border p-3 rounded-lg" />
                                 </div>
                                 <div className="flex flex-col gap-2">
                                     <label className="text-sm font-bold text-gray-600">Fecha Vencimiento</label>
-                                    <input type="date" value={currentNewsItem.expirationDate} onChange={e => setCurrentNewsItem({...currentNewsItem, expirationDate: e.target.value})} className="border p-3 rounded-lg" />
+                                    <input type="date" value={currentNewsItem.expirationDate} onChange={e => setCurrentNewsItem({ ...currentNewsItem, expirationDate: e.target.value })} className="border p-3 rounded-lg" />
                                 </div>
                             </div>
 

@@ -10,6 +10,7 @@ import LoginPage from './pages/LoginPage';
 import ChatBot from './components/ChatBot';
 import { HotelProvider } from './context/HotelContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import UserManagement from './pages/UserManagement';
 
 // Protected Route Component
 // Fix: Use React.ReactElement instead of JSX.Element to avoid namespace issues
@@ -32,7 +33,7 @@ const AppContent: React.FC = () => {
     return (
         <div className="flex h-screen w-full text-[#111118] dark:text-white bg-background-light dark:bg-background-dark">
             {!isLoginPage && <Sidebar />}
-            
+
             <main className={`flex-1 h-full overflow-hidden ${!isLoginPage ? 'bg-background-light dark:bg-background-dark' : ''}`}>
                 <div className="h-full overflow-y-auto scroll-smooth">
                     <Routes>
@@ -40,7 +41,7 @@ const AppContent: React.FC = () => {
                         <Route path="/" element={<HomePage />} />
                         <Route path="/hotels" element={<HotelDirectoryPage />} />
                         <Route path="/hotel-profile/:id" element={<HotelProfilePage />} />
-                        
+
                         {/* Protected CMS Routes */}
                         <Route path="/cms" element={
                             <RequireAuth>
@@ -55,6 +56,12 @@ const AppContent: React.FC = () => {
                         <Route path="/cms/edit-hotel/:id" element={
                             <RequireAuth>
                                 <HotelEditorPage />
+                            </RequireAuth>
+                        } />
+                        {/* Admin Route */}
+                        <Route path="/admin/users" element={
+                            <RequireAuth>
+                                <UserManagement />
                             </RequireAuth>
                         } />
                     </Routes>

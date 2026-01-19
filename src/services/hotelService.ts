@@ -1,5 +1,5 @@
 import { supabase } from '../supabaseClient';
-import { Hotel } from '../../types';
+import { Hotel } from '../types';
 
 export const hotelService = {
     async fetchHotels() {
@@ -31,6 +31,7 @@ export const hotelService = {
     },
 
     async upsertHotel(hotel: Partial<Hotel>) {
+        console.log("Saving hotel...", hotel);
         // Filtrar campos undefined para evitar errores, pero mantener nulls si es intencional
         // Supabase ignora campos que no están en la tabla si se usa spread, pero mejor ser explícitos o limpiar el objeto
         const { data, error } = await supabase
@@ -44,6 +45,7 @@ export const hotelService = {
             throw error;
         }
 
+        console.log("Hotel saved successfully:", data);
         return data;
     }
 };
