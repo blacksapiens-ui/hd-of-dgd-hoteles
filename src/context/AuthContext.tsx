@@ -13,7 +13,6 @@ interface Profile {
 interface AuthContextType {
     isAuthenticated: boolean;
     login: (email: string, pass: string) => Promise<{ data: any; error: any }>;
-    signup: (email: string, pass: string) => Promise<{ data: any; error: any }>;
     logout: () => Promise<void>;
     user: any | null;
     role: string | null;
@@ -90,14 +89,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return { data, error };
     };
 
-    const signup = async (email: string, pass: string) => {
-        const { data, error } = await supabase.auth.signUp({
-            email,
-            password: pass,
-        });
-        return { data, error };
-    };
-
     const logout = async () => {
         await supabase.auth.signOut();
         setRole(null);
@@ -106,7 +97,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated: !!session, login, signup, logout, user, role, loading }}>
+        <AuthContext.Provider value={{ isAuthenticated: !!session, login, logout, user, role, loading }}>
             {!loading && children}
         </AuthContext.Provider>
     );

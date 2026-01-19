@@ -4,61 +4,32 @@ import { useAuth } from '../context/AuthContext';
 
 const LoginPage: React.FC = () => {
     const navigate = useNavigate();
+    const { login } = useAuth();
     const location = useLocation();
-
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [isLogin, setIsLogin] = useState(true);
     const [error, setError] = useState('');
-    const [message, setMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     // Get the page the user was trying to access, or default to CMS
     const from = (location.state as any)?.from?.pathname || '/cms';
 
-    // @ts-ignore
-    const { login, signup } = useAuth();
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        setMessage('');
         setIsLoading(true);
 
-        if (isLogin) {
-            const { error: authError } = await login(email, password);
+        const { data, error: authError } = await login(email, password);
 
-            if (authError) {
-                setError('Error al iniciar sesión: ' + authError.message);
-                setIsLoading(false);
-            } else {
-                // Successful login
-                navigate(from, { replace: true });
-            }
+        if (authError) {
+            setError('Error al iniciar sesión: ' + authError.message);
+            setIsLoading(false);
         } else {
-            const { error: authError } = await signup(email, password);
-            if (authError) {
-                setError('Error al registrarse: ' + authError.message);
-                setIsLoading(false);
-            } else {
-                setMessage('Cuenta creada exitosamente. Iniciando sesión...');
-                // Auto login after signup might be handled by Supabase automatically, 
-                // or we can try to login explicitly if needed. 
-                // However, usually signup with email returns a session if email confirmation is disabled.
-                // Or user needs to check email. Let's assume auto-login or ask to login.
-                setTimeout(async () => {
-                    const { error: loginError } = await login(email, password);
-                    if (!loginError) {
-                        navigate(from, { replace: true });
-                    } else {
-                        // If auto login fails (e.g. email confirmation required), switch to login view
-                        setIsLogin(true);
-                        setIsLoading(false);
-                        setMessage('Registro exitoso. Por favor inicia sesión.');
-                    }
-                }, 1500);
-            }
+            // Successful login, redirection is handled by updated AuthContext/App state or manually here.
+            // Wait a bit for profile to load?
+            // Actually navigation depends on if we are waiting for fetching profile.
+            navigate(from, { replace: true });
         }
     };
 
@@ -83,8 +54,8 @@ const LoginPage: React.FC = () => {
                                     className="w-full h-full rounded-full object-cover"
                                 />
                             </div>
-                            <h2 className="text-2xl font-black text-white tracking-tight">{isLogin ? 'Bienvenido' : 'Crear Cuenta'}</h2>
-                            <p className="text-gray-300 text-sm mt-1">{isLogin ? 'Acceso al Portal de Administración' : 'Regístrate para gestionar el sistema'}</p>
+                            <h2 className="text-2xl font-black text-white tracking-tight">Bienvenido</h2>
+                            <p className="text-gray-300 text-sm mt-1">Acceso al Portal de Administración</p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -125,13 +96,6 @@ const LoginPage: React.FC = () => {
                                 </div>
                             )}
 
-                            {message && (
-                                <div className="bg-green-500/10 border border-green-500/20 text-green-200 text-xs p-3 rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
-                                    <span className="material-symbols-outlined text-sm">check_circle</span>
-                                    {message}
-                                </div>
-                            )}
-
                             <button
                                 type="submit"
                                 disabled={isLoading}
@@ -141,24 +105,14 @@ const LoginPage: React.FC = () => {
                                     <span className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                                 ) : (
                                     <>
-                                        {isLogin ? 'Ingresar al Sistema' : 'Registrarse'} <span className="material-symbols-outlined">arrow_forward</span>
+                                        Ingresar al Sistema <span className="material-symbols-outlined">arrow_forward</span>
                                     </>
                                 )}
                             </button>
                         </form>
 
                         <div className="text-center">
-                            <button
-                                onClick={() => { setIsLogin(!isLogin); setError(''); setMessage(''); }}
-                                className="text-sm text-gray-300 hover:text-white transition-colors underline decoration-white/30 hover:decoration-white"
-                            >
-                                {isLogin ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia sesión'}
-                            </button>
-                            {isLogin && (
-                                <div className="mt-2">
-                                    <a href="#" className="text-xs text-gray-400 hover:text-white transition-colors">¿Olvidaste tu contraseña?</a>
-                                </div>
-                            )}
+                            <a href="#" className="text-xs text-gray-400 hover:text-white transition-colors">¿Olvidaste tu contraseña?</a>
                         </div>
                     </div>
 
