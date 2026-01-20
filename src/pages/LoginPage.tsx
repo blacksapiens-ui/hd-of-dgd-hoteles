@@ -4,11 +4,13 @@ import { useAuth } from '../context/AuthContext';
 
 const LoginPage: React.FC = () => {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, signUp } = useAuth();
     const location = useLocation();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [fullName, setFullName] = useState('');
+    const [isLogin, setIsLogin] = useState(true);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -20,17 +22,27 @@ const LoginPage: React.FC = () => {
         setError('');
         setIsLoading(true);
 
-        const { data, error: authError } = await login(email, password);
-
-        if (authError) {
-            setError('Error al iniciar sesión: ' + authError.message);
-            setIsLoading(false);
-        } else {
-            // Successful login, redirection is handled by updated AuthContext/App state or manually here.
-            // Wait a bit for profile to load?
-            // Actually navigation depends on if we are waiting for fetching profile.
+        try {
+            if (isLogin) {
+                const { error: authError } = await login(email, password);
+                if (authError) throw authError;
+            } else {
+                const { error: authError } = await signUp(email, password, fullName);
+                if (authError) throw authError;
+            }
+            // Navigate on success
             navigate(from, { replace: true });
+        } catch (err: any) {
+            setError('Error: ' + (err.message || 'Ocurrió un error inesperado'));
+            setIsLoading(false);
         }
+    };
+
+    const toggleMode = () => {
+        setIsLogin(!isLogin);
+        setError('');
+        setFullName('');
+        setPassword('');
     };
 
     return (
@@ -54,11 +66,32 @@ const LoginPage: React.FC = () => {
                                     className="w-full h-full rounded-full object-cover"
                                 />
                             </div>
-                            <h2 className="text-2xl font-black text-white tracking-tight">Bienvenido</h2>
-                            <p className="text-gray-300 text-sm mt-1">Acceso al Portal de Administración</p>
+                            <h2 className="text-2xl font-black text-white tracking-tight">
+                                {isLogin ? 'Bienvenido' : 'Crear Cuenta'}
+                            </h2>
+                            <p className="text-gray-300 text-sm mt-1">
+                                {isLogin ? 'Acceso al Portal de Administración' : 'Únete a DGD Hoteles'}
+                            </p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                            {!isLogin && (
+                                <div className="space-y-1 animate-in slide-in-from-top-4 fade-in">
+                                    <label className="text-xs font-bold text-gray-300 uppercase tracking-wider ml-1">Nombre Completo</label>
+                                    <div className="relative">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 material-symbols-outlined text-lg">person</span>
+                                        <input
+                                            type="text"
+                                            value={fullName}
+                                            onChange={(e) => setFullName(e.target.value)}
+                                            className="w-full pl-11 pr-4 py-3 bg-black/20 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
+                                            placeholder="Tu nombre"
+                                            required={!isLogin}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="space-y-1">
                                 <label className="text-xs font-bold text-gray-300 uppercase tracking-wider ml-1">Email Corporativo</label>
                                 <div className="relative">
@@ -105,14 +138,21 @@ const LoginPage: React.FC = () => {
                                     <span className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                                 ) : (
                                     <>
-                                        Ingresar al Sistema <span className="material-symbols-outlined">arrow_forward</span>
+                                        {isLogin ? 'Ingresar al Sistema' : 'Registrarse'} <span className="material-symbols-outlined">arrow_forward</span>
                                     </>
                                 )}
                             </button>
                         </form>
 
-                        <div className="text-center">
-                            <a href="#" className="text-xs text-gray-400 hover:text-white transition-colors">¿Olvidaste tu contraseña?</a>
+                        <div className="text-center flex flex-col gap-2">
+                            {isLogin && <a href="#" className="text-xs text-gray-400 hover:text-white transition-colors">¿Olvidaste tu contraseña?</a>}
+                            <button
+                                type="button"
+                                onClick={toggleMode}
+                                className="text-sm text-primary hover:text-blue-400 font-semibold transition-colors mt-2"
+                            >
+                                {isLogin ? '¿No tienes cuenta? Regístrate aquí' : '¿Ya tienes cuenta? Inicia Sesión'}
+                            </button>
                         </div>
                     </div>
 
