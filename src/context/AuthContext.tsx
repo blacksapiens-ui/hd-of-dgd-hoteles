@@ -13,7 +13,6 @@ interface Profile {
 interface AuthContextType {
     isAuthenticated: boolean;
     login: (email: string, pass: string) => Promise<{ data: any; error: any }>;
-    signUp: (email: string, pass: string, fullName?: string) => Promise<{ data: any; error: any }>;
     logout: () => Promise<void>;
     user: any | null;
     role: string | null;
@@ -90,35 +89,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return { data, error };
     };
 
-    const signUp = async (email: string, pass: string, fullName: string = '') => {
-        const { data, error } = await supabase.auth.signUp({
-            email,
-            password: pass,
-        });
-
-        if (!error && data.user) {
-            // Create profile
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .insert([
-                    {
-                        id: data.user.id,
-                        email: email,
-                        full_name: fullName,
-                        role: 'user', // Default role
-                        is_active: true
-                    }
-                ]);
-
-            if (profileError) {
-                console.error('Error creating profile:', profileError);
-                // Optional: Consider if we should return this error or just log it
-            }
-        }
-
-        return { data, error };
-    };
-
     const logout = async () => {
         await supabase.auth.signOut();
         setRole(null);
@@ -127,7 +97,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated: !!session, login, signUp, logout, user, role, loading }}>
+        <AuthContext.Provider value={{ isAuthenticated: !!session, login, logout, user, role, loading }}>
             {!loading && children}
         </AuthContext.Provider>
     );
