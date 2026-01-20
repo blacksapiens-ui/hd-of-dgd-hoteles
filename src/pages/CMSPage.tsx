@@ -166,7 +166,7 @@ const CMSPage: React.FC = () => {
             };
 
             const newHotel: Hotel = {
-                id: (clean(cols[0]) && clean(cols[0]) !== 'AUTO') ? clean(cols[0]) : Date.now().toString() + Math.floor(Math.random() * 1000),
+                id: (clean(cols[0]) && clean(cols[0]) !== 'AUTO') ? clean(cols[0]) : crypto.randomUUID(),
                 name: clean(cols[1]) || 'Nuevo Hotel Importado',
                 location: clean(cols[2]) || 'Sin Ubicación',
                 rating: parseFloat(clean(cols[3])) || 0,
@@ -212,17 +212,25 @@ const CMSPage: React.FC = () => {
 
         try {
             // Small delay to allow UI to render 'loading'
-            setTimeout(() => {
+            // Small delay to allow UI to render 'loading'
+            setTimeout(async () => {
                 const parsedHotels = parseCSV(content);
                 if (parsedHotels.length > 0) {
-                    importHotels(parsedHotels);
-                    setImportStatus('success');
-                    setImportMessage(`¡Proceso exitoso! Se han importado ${parsedHotels.length} hoteles correctamente.`);
-                    // Auto-hide success message after 5 seconds
-                    setTimeout(() => {
-                        setImportStatus('idle');
-                        setImportMessage('');
-                    }, 5000);
+                    try {
+                        await importHotels(parsedHotels);
+                        setImportStatus('success');
+                        setImportMessage(`¡Proceso exitoso! Se han importado ${parsedHotels.length} hoteles correctamente.`);
+                        // Auto-hide success message after 5 seconds
+                        setTimeout(() => {
+                            setImportStatus('idle');
+                            setImportMessage('');
+                        }, 5000);
+                    } catch (e) {
+                        console.error(e);
+                        setImportStatus('error');
+                        const errorMsg = e instanceof Error ? e.message : "Error desconocido";
+                        setImportMessage(`Error al guardar: ${errorMsg}`);
+                    }
                 } else {
                     setImportStatus('error');
                     setImportMessage("No se encontraron registros válidos. Verifique que el archivo no esté vacío y siga la plantilla.");
@@ -315,7 +323,7 @@ const CMSPage: React.FC = () => {
             setEditingSlide(slide);
         } else {
             setEditingSlide({
-                id: Date.now().toString(),
+                id: crypto.randomUUID(),
                 title: '',
                 subtitle: '',
                 promoTag: 'Novedad',
@@ -348,7 +356,7 @@ const CMSPage: React.FC = () => {
     const handleCreateNews = () => {
         setIsEditingNews(true);
         setCurrentNewsItem({
-            id: Date.now().toString(),
+            id: crypto.randomUUID(),
             category: 'General',
             tagColor: 'blue',
             title: '',

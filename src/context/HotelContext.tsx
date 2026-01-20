@@ -23,10 +23,10 @@ interface HotelContextType {
     news: NewsItem[];
     slides: HeroSlide[];
     getHotel: (id: string) => Hotel | undefined;
-    addHotel: (hotel: Hotel) => void;
-    updateHotel: (id: string, hotel: Hotel) => void;
+    addHotel: (hotel: Hotel) => Promise<void>;
+    updateHotel: (id: string, hotel: Hotel) => Promise<void>;
     deleteHotel: (id: string) => void;
-    importHotels: (newHotels: Hotel[]) => void;
+    importHotels: (newHotels: Hotel[]) => Promise<void>;
     addNews: (item: NewsItem) => void;
     updateNews: (item: NewsItem) => void;
     deleteNews: (id: string) => void;
@@ -67,6 +67,7 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             setHotels(prev => [...prev, saved]);
         } catch (e) {
             console.error("Error adding hotel", e);
+            throw e;
         }
     };
 
@@ -76,6 +77,7 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             setHotels(prev => prev.map(h => h.id === id ? saved : h));
         } catch (e) {
             console.error("Error updating hotel", e);
+            throw e;
         }
     };
 

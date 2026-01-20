@@ -11,14 +11,14 @@ const HotelEditorPage: React.FC = () => {
     const [activeTab, setActiveTab] = useState('general');
 
     const defaultHotel: Hotel = {
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         name: '', location: '', rating: 4.5, reviews: 0, category: 'Confort', featured: false, status: 'Activo',
         description: '', latitude: '', longitude: '', highlights: [],
         mainImage: '', gallery: [],
         amenities: { wifi: true, pool: false, spa: false, gym: false, ac: true, roomService: false, beach: false, kidsClub: false },
-        extendedAmenities: { 
+        extendedAmenities: {
             petFriendly: false, accessibility: false, eventsHall: false, parking: false, hotWater: true,
-            miniFridge: false, safe: false, nightShow: false, extraActivities: false, kidsPark: false, kidsPool: false, privateBeach: false 
+            miniFridge: false, safe: false, nightShow: false, extraActivities: false, kidsPark: false, kidsPool: false, privateBeach: false
         },
         roomTypes: [],
         restaurants: [],
@@ -71,7 +71,7 @@ const HotelEditorPage: React.FC = () => {
     // --- Dynamic Lists Handlers (Rooms & Restaurants) ---
 
     const addRoomType = () => {
-        const newRoom: RoomType = { id: Date.now().toString(), name: '', description: '', capacity: 2, quantity: 1 };
+        const newRoom: RoomType = { id: crypto.randomUUID(), name: '', description: '', capacity: 2, quantity: 1 };
         setFormData(prev => ({ ...prev, roomTypes: [...prev.roomTypes, newRoom] }));
     };
 
@@ -86,7 +86,7 @@ const HotelEditorPage: React.FC = () => {
     };
 
     const addRestaurant = () => {
-        const newRest: Restaurant = { id: Date.now().toString(), name: '', cuisineType: '', requiresReservation: false, schedule: '' };
+        const newRest: Restaurant = { id: crypto.randomUUID(), name: '', cuisineType: '', requiresReservation: false, schedule: '' };
         setFormData(prev => ({ ...prev, restaurants: [...prev.restaurants, newRest] }));
     };
 
@@ -110,20 +110,28 @@ const HotelEditorPage: React.FC = () => {
         newGallery[index] = value;
         setFormData(prev => ({ ...prev, gallery: newGallery }));
     };
-    
+
     const handleGalleryRemove = (index: number) => {
-         setFormData(prev => ({ ...prev, gallery: prev.gallery.filter((_, i) => i !== index) }));
+        setFormData(prev => ({ ...prev, gallery: prev.gallery.filter((_, i) => i !== index) }));
     };
 
-    const handleSave = () => {
-        if (isEditMode && id) {
-            updateHotel(id, formData);
-            alert('Hotel actualizado correctamente.');
-        } else {
-            addHotel({ ...formData, id: Date.now().toString() });
-            alert('Hotel creado correctamente.');
+    const handleSave = async () => {
+        try {
+            if (isEditMode && id) {
+                await updateHotel(id, formData);
+                alert('Hotel actualizado correctamente.');
+            } else {
+                // Ensure valid UUID
+                const newId = formData.id && formData.id.length > 20 ? formData.id : crypto.randomUUID();
+                await addHotel({ ...formData, id: newId });
+                alert('Hotel creado correctamente.');
+            }
+            navigate('/cms');
+        } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
+            alert(`Error al guardar el hotel: ${errorMsg}`);
+            console.error(error);
         }
-        navigate('/cms');
     };
 
     return (
@@ -155,12 +163,12 @@ const HotelEditorPage: React.FC = () => {
                             { id: 'schedules', icon: 'schedule', label: 'Horarios y Políticas' },
                             { id: 'photos', icon: 'photo_library', label: 'Galería de Fotos' },
                         ].map(tab => (
-                            <button 
+                            <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all text-left ${activeTab === tab.id ? 'bg-primary text-white shadow-md' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
                             >
-                                <span className="material-symbols-outlined">{tab.icon}</span> 
+                                <span className="material-symbols-outlined">{tab.icon}</span>
                                 {tab.label}
                             </button>
                         ))}
@@ -169,7 +177,7 @@ const HotelEditorPage: React.FC = () => {
                     {/* Form Content Area */}
                     <div className="flex-1 overflow-y-auto p-8 custom-scrollbar pb-20">
                         <div className="max-w-4xl mx-auto space-y-8">
-                            
+
                             {/* --- TAB: GENERAL --- */}
                             {activeTab === 'general' && (
                                 <section className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
@@ -182,13 +190,13 @@ const HotelEditorPage: React.FC = () => {
                                             </div>
                                             <div className="space-y-1">
                                                 <label className="text-xs font-bold text-gray-500 uppercase">Destino / Ubicación</label>
-                                                <input 
-                                                    name="location" 
-                                                    value={formData.location} 
-                                                    onChange={handleInput} 
+                                                <input
+                                                    name="location"
+                                                    value={formData.location}
+                                                    onChange={handleInput}
                                                     list="locations-list"
-                                                    className="w-full border p-2.5 rounded-lg dark:bg-slate-900 dark:border-gray-700" 
-                                                    placeholder="Ej: Cartagena, Santa Marta, San Andrés..." 
+                                                    className="w-full border p-2.5 rounded-lg dark:bg-slate-900 dark:border-gray-700"
+                                                    placeholder="Ej: Cartagena, Santa Marta, San Andrés..."
                                                 />
                                                 <datalist id="locations-list">
                                                     <option value="Cartagena" />
@@ -236,7 +244,7 @@ const HotelEditorPage: React.FC = () => {
                             {/* --- TAB: HABITACIONES --- */}
                             {activeTab === 'rooms' && (
                                 <section className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-                                     <div className="flex justify-between items-center">
+                                    <div className="flex justify-between items-center">
                                         <h3 className="text-xl font-bold dark:text-white">Tipos de Habitación</h3>
                                         <button onClick={addRoomType} className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"><span className="material-symbols-outlined">add</span> Agregar Habitación</button>
                                     </div>
@@ -276,11 +284,11 @@ const HotelEditorPage: React.FC = () => {
                                         <h3 className="text-lg font-bold border-b pb-2 mb-4 dark:border-gray-700">Comodidades y Servicios Generales</h3>
                                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                             {[
-                                                { k: 'wifi', l: 'Wifi Gratis' }, { k: 'pool', l: 'Piscina General' }, 
-                                                { k: 'spa', l: 'Spa' }, { k: 'gym', l: 'Gimnasio' }, 
-                                                { k: 'ac', l: 'Aire Acondicionado' }, { k: 'roomService', l: 'Servicio a la Habitación' }, 
+                                                { k: 'wifi', l: 'Wifi Gratis' }, { k: 'pool', l: 'Piscina General' },
+                                                { k: 'spa', l: 'Spa' }, { k: 'gym', l: 'Gimnasio' },
+                                                { k: 'ac', l: 'Aire Acondicionado' }, { k: 'roomService', l: 'Servicio a la Habitación' },
                                                 { k: 'beach', l: 'Acceso a Playa' }, { k: 'kidsClub', l: 'Club de Niños' }
-                                            ].map(({k, l}) => (
+                                            ].map(({ k, l }) => (
                                                 <label key={k} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition-colors dark:border-gray-700">
                                                     <input type="checkbox" checked={formData.amenities[k as keyof typeof formData.amenities]} onChange={() => handleAmenityChange(k, 'amenities')} className="w-5 h-5 text-primary rounded focus:ring-primary" />
                                                     <span className="text-sm font-medium">{l}</span>
@@ -299,7 +307,7 @@ const HotelEditorPage: React.FC = () => {
                                                 { k: 'safe', l: 'Cajilla Seguridad' }, { k: 'nightShow', l: 'Show Nocturno' },
                                                 { k: 'extraActivities', l: 'Actividades Extras' }, { k: 'kidsPark', l: 'Parque Niños' },
                                                 { k: 'kidsPool', l: 'Piscina Niños' }, { k: 'privateBeach', l: 'Playa Privada' }
-                                            ].map(({k, l}) => (
+                                            ].map(({ k, l }) => (
                                                 <label key={k} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition-colors dark:border-gray-700">
                                                     <input type="checkbox" checked={formData.extendedAmenities[k as keyof typeof formData.extendedAmenities]} onChange={() => handleAmenityChange(k, 'extendedAmenities')} className="w-5 h-5 text-primary rounded focus:ring-primary" />
                                                     <span className="text-sm font-medium">{l}</span>
@@ -313,14 +321,14 @@ const HotelEditorPage: React.FC = () => {
                             {/* --- TAB: GASTRONOMIA --- */}
                             {activeTab === 'dining' && (
                                 <section className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-                                     <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                                    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
                                         <div className="space-y-1 max-w-xs">
                                             <label className="text-xs font-bold text-gray-500 uppercase">Número de Bares</label>
                                             <input type="number" name="bars" value={formData.bars} onChange={handleInput} className="w-full border p-2 rounded dark:bg-slate-900 dark:border-gray-700" />
                                         </div>
-                                     </div>
+                                    </div>
 
-                                     <div className="flex justify-between items-center mt-6">
+                                    <div className="flex justify-between items-center mt-6">
                                         <h3 className="text-xl font-bold dark:text-white">Restaurantes</h3>
                                         <button onClick={addRestaurant} className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"><span className="material-symbols-outlined">add</span> Agregar Restaurante</button>
                                     </div>
@@ -342,7 +350,7 @@ const HotelEditorPage: React.FC = () => {
                                                     <input value={rest.schedule} onChange={(e) => updateRestaurant(idx, 'schedule', e.target.value)} className="w-full border p-2 rounded dark:bg-slate-900 dark:border-gray-700" placeholder="Ej: 12:00 PM - 10:00 PM" />
                                                 </div>
                                                 <div className="flex items-end pb-2">
-                                                     <label className="flex items-center gap-2 cursor-pointer">
+                                                    <label className="flex items-center gap-2 cursor-pointer">
                                                         <input type="checkbox" checked={rest.requiresReservation} onChange={(e) => updateRestaurant(idx, 'requiresReservation', e.target.checked)} className="w-5 h-5 text-primary rounded" />
                                                         <span className="text-sm font-bold">Requiere Reservación</span>
                                                     </label>
@@ -398,17 +406,17 @@ const HotelEditorPage: React.FC = () => {
                             {/* --- TAB: FOTOS --- */}
                             {activeTab === 'photos' && (
                                 <section className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-                                     <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-4">
+                                    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-4">
                                         <h3 className="text-lg font-bold dark:text-white">Imagen Principal (Portada)</h3>
                                         <div className="space-y-1">
                                             <input name="mainImage" value={formData.mainImage} onChange={handleInput} className="w-full border p-2.5 rounded-lg dark:bg-slate-900 dark:border-gray-700" placeholder="URL de la imagen..." />
                                         </div>
                                         {formData.mainImage && (
-                                            <div className="h-48 w-full bg-cover bg-center rounded-lg" style={{backgroundImage: `url("${formData.mainImage}")`}}></div>
+                                            <div className="h-48 w-full bg-cover bg-center rounded-lg" style={{ backgroundImage: `url("${formData.mainImage}")` }}></div>
                                         )}
-                                     </div>
+                                    </div>
 
-                                     <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-4">
+                                    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-4">
                                         <div className="flex justify-between items-center mb-4">
                                             <h3 className="text-lg font-bold dark:text-white">Galería de Fotos ({formData.gallery.length}/20)</h3>
                                             <button disabled={formData.gallery.length >= 20} onClick={handleGalleryAdd} className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold disabled:opacity-50">Agregar Foto</button>
@@ -422,7 +430,7 @@ const HotelEditorPage: React.FC = () => {
                                             ))}
                                             {formData.gallery.length === 0 && <p className="text-gray-400 italic">No hay fotos en la galería.</p>}
                                         </div>
-                                     </div>
+                                    </div>
                                 </section>
                             )}
 
