@@ -87,6 +87,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             email,
             password: pass,
         });
+
+        if (data.user && !error) {
+            // Update last_login
+            await supabase
+                .from('profiles')
+                .update({ last_login: new Date().toISOString() })
+                .eq('id', data.user.id);
+        }
+
         return { data, error };
     };
 

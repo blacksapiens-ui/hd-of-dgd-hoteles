@@ -8,6 +8,7 @@ interface UserProfile {
     role: string;
     is_active: boolean;
     full_name?: string;
+    last_login?: string;
 }
 
 const UserManagement: React.FC = () => {
@@ -70,6 +71,24 @@ const UserManagement: React.FC = () => {
         }
     };
 
+    const deleteUser = async (id: string, email: string) => {
+        if (!window.confirm(`¿Estás seguro de que deseas eliminar permanentemente al usuario ${email}? Esta acción no se puede deshacer.`)) {
+            return;
+        }
+
+        try {
+            const { error } = await supabase.rpc('delete_user', { user_id: id });
+
+            if (error) throw error;
+
+            setUsers(users.filter(user => user.id !== id));
+            // alert('Usuario eliminado correctamente'); 
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            alert('Error al eliminar usuario. Asegúrate de haber ejecutado el script SQL de migración en Supabase.');
+        }
+    };
+
     if (loading) return <div className="p-8 text-center text-gray-500">Cargando usuarios...</div>;
 
     return (
@@ -96,6 +115,7 @@ const UserManagement: React.FC = () => {
                             <tr>
                                 <th className="px-6 py-4">Usuario</th>
                                 <th className="px-6 py-4">Rol</th>
+                                <th className="px-6 py-4">Último Ingreso</th>
                                 <th className="px-6 py-4">Estado</th>
                                 <th className="px-6 py-4 text-right">Acciones</th>
                             </tr>
@@ -118,6 +138,20 @@ const UserManagement: React.FC = () => {
                                             }`}>
                                             {user.role === 'admin' ? 'Administrador' : 'Usuario'}
                                         </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex flex-col">
+                                            <span className="text-sm text-[#111118] dark:text-gray-200">
+                                                {user.last_login
+                                                    ? new Date(user.last_login).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
+                                                    : 'Nunca'}
+                                            </span>
+                                            <span className="text-xs text-gray-500">
+                                                {user.last_login
+                                                    ? new Date(user.last_login).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+                                                    : '-'}
+                                            </span>
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">
@@ -148,6 +182,13 @@ const UserManagement: React.FC = () => {
                                                     {user.is_active ? 'block' : 'check_circle'}
                                                 </span>
                                             </button>
+                                            <button
+                                                onClick={() => deleteUser(user.id, user.email)}
+                                                className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                                title="Eliminar Usuario"
+                                            >
+                                                <span className="material-symbols-outlined text-[20px]">delete</span>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -156,8 +197,7 @@ const UserManagement: React.FC = () => {
                     </table>
                 </div>
             </div>
-        </div>
-    );
+            );
 };
 
-export default UserManagement;
+            export default UserManagement;
