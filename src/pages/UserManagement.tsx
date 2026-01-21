@@ -197,7 +197,8 @@ const UserManagement: React.FC = () => {
                     </table>
                 </div>
             </div>
-            );
+        </div>
+    );
 };
 
-            export default UserManagement;
+export default UserManagement;
