@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import HomePage from './pages/HomePage';
+import NewsPage from './pages/NewsPage';
 import CMSPage from './pages/CMSPage';
 import HotelProfilePage from './pages/HotelProfilePage';
 import HotelDirectoryPage from './pages/HotelDirectoryPage';
@@ -40,6 +41,7 @@ const AppContent: React.FC = () => {
                         <Route path="/login" element={<LoginPage />} />
                         <Route path="/" element={<HomePage />} />
                         <Route path="/hotels" element={<HotelDirectoryPage />} />
+                        <Route path="/news" element={<NewsPage />} />
                         <Route path="/hotel-profile/:id" element={<HotelProfilePage />} />
 
                         {/* Protected CMS Routes */}

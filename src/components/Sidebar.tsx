@@ -38,9 +38,9 @@ const Sidebar: React.FC = () => {
                     <span className={`material-symbols-outlined ${isActive('/hotels') || isActive('/hotel-profile') ? 'fill text-primary' : 'text-[#616189] group-hover:text-primary'}`}>domain</span>
                     <p className={`text-sm font-medium leading-normal ${isActive('/hotels') || isActive('/hotel-profile') ? '' : 'group-hover:text-primary'}`}>Hoteles</p>
                 </Link>
-                <Link to="/" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#616189] hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group">
-                    <span className="material-symbols-outlined text-[#616189] group-hover:text-primary">newspaper</span>
-                    <p className="text-sm font-medium leading-normal group-hover:text-primary">Noticias</p>
+                <Link to="/news" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors group ${isActive('/news') ? 'bg-primary/10 text-primary' : 'text-[#616189] hover:bg-gray-50 dark:hover:bg-white/5'}`}>
+                    <span className={`material-symbols-outlined ${isActive('/news') ? 'text-primary fill' : 'text-[#616189] group-hover:text-primary'}`}>newspaper</span>
+                    <p className={`text-sm font-medium leading-normal ${isActive('/news') ? '' : 'group-hover:text-primary'}`}>Noticias</p>
                 </Link>
 
                 <div className="mt-auto"></div>

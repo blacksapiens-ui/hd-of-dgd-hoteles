@@ -135,7 +135,7 @@ const HomePage: React.FC = () => {
                         <span className="material-symbols-outlined text-primary">notifications_active</span>
                         Últimas Actualizaciones
                     </h3>
-                    <a className="text-primary text-sm font-medium hover:underline" href="#">Ver todas</a>
+                    <button onClick={() => navigate('/news')} className="text-primary text-sm font-medium hover:underline bg-transparent border-none cursor-pointer">Ver todas</button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {sortedNews.length > 0 ? sortedNews.slice(0, 3).map(n => (
@@ -156,7 +156,7 @@ const HomePage: React.FC = () => {
                         <div className="col-span-3 text-center py-10 text-gray-400">No hay noticias recientes.</div>
                     )}
                 </div>
-            </section>
+            </section >
 
             <section>
                 <div className="flex items-center justify-between mb-4">
@@ -211,7 +211,7 @@ const HomePage: React.FC = () => {
             <footer className="mt-8 text-center text-[#616189] text-sm py-4 border-t border-gray-200 dark:border-gray-800">
                 <p>© 2024 DGD Hoteles. Información confidencial para uso exclusivo de agentes.</p>
             </footer>
-        </div>
+        </div >
     );
 };
 
