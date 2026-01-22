@@ -70,5 +70,17 @@ export const newsService = {
             expirationDate: data.expiration_date,
             isActive: data.is_active
         };
+    },
+
+    async deleteNews(id: string) {
+        const { error } = await supabase
+            .from('news')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error deleting news:', error);
+            throw error;
+        }
     }
 };

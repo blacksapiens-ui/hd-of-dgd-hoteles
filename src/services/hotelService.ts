@@ -49,6 +49,18 @@ export const hotelService = {
 
         console.log("Hotel saved successfully:", data);
         return mapFromDb(data);
+    },
+
+    async deleteHotel(id: string) {
+        const { error } = await supabase
+            .from('hotels')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error deleting hotel:', error);
+            throw error;
+        }
     }
 };
 

@@ -81,9 +81,14 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
     };
 
-    const deleteHotel = (id: string) => {
-        // TODO: Implementar delete en backend
-        setHotels(prev => prev.filter(h => h.id !== id));
+    const deleteHotel = async (id: string) => {
+        try {
+            await hotelService.deleteHotel(id);
+            setHotels(prev => prev.filter(h => h.id !== id));
+        } catch (e) {
+            console.error("Error deleting hotel", e);
+            alert("No se pudo eliminar el hotel. Verifica tu conexión o permisos.");
+        }
     };
 
     const importHotels = async (newHotels: Hotel[]) => {
@@ -105,7 +110,15 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             setNews(prev => prev.map(n => n.id === item.id ? saved : n));
         } catch (e) { console.error(e); }
     };
-    const deleteNews = (id: string) => setNews(prev => prev.filter(n => n.id !== id));
+    const deleteNews = async (id: string) => {
+        try {
+            await newsService.deleteNews(id);
+            setNews(prev => prev.filter(n => n.id !== id));
+        } catch (e) {
+            console.error("Error deleting news", e);
+            alert("No se pudo eliminar la noticia.");
+        }
+    };
 
     const addSlide = (slide: HeroSlide) => setSlides(prev => [...prev, slide]);
     const updateSlide = (slide: HeroSlide) => setSlides(prev => prev.map(s => s.id === slide.id ? slide : s));
